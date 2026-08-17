@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  Zap, Check, ArrowRight, ArrowLeft, Instagram, Bot, 
+  Zap, Check, ArrowRight, ArrowLeft, Bot, 
   Link2, Sparkles, Building, Briefcase, UserCheck
 } from 'lucide-react';
+import { InstagramIcon } from '@/components/common/InstagramIcon';
 
 const CATEGORIES = [
   'Creator', 'Influencer', 'Coach', 'Agency', 'Real Estate',
@@ -143,7 +144,7 @@ export default function OnboardingPage() {
         {step === 5 && (
           <div className="space-y-4 text-center">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 via-pink-600 to-amber-500 flex items-center justify-center mx-auto shadow-lg">
-              <Instagram className="w-7 h-7 text-white" />
+              <InstagramIcon className="w-7 h-7 text-white" />
             </div>
             <h2 className="text-xl font-bold text-white">Connect Official Meta Instagram API</h2>
             <p className="text-xs text-slate-400">

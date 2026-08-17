@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Zap, ArrowRight, Lock, Mail, Chrome } from 'lucide-react';
+import { Zap, ArrowRight, Lock, Mail, Globe } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -87,7 +87,7 @@ export default function LoginPage() {
           onClick={() => router.push('/dashboard')}
           className="w-full py-2.5 rounded-xl border border-white/10 text-xs font-semibold text-slate-200 hover:bg-white/5 transition-all flex items-center justify-center gap-2"
         >
-          <Chrome className="w-4 h-4 text-blue-400" /> Continue with Google
+          <Globe className="w-4 h-4 text-blue-400" /> Continue with Google
         </button>
 
         <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-500/20 text-center">

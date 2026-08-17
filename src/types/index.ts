@@ -55,8 +55,21 @@ export type AutomationStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ERROR';
 export interface AutomationNodeData {
   label: string;
   keyword?: string;
+  keywords?: string[];
+  commentConditionType?: 'ANY' | 'CONTAINS' | 'EXACT' | 'MULTIPLE';
   messageText?: string;
   delayMinutes?: number;
+  delaySeconds?: number;
+  postId?: string;
+  postImage?: string;
+  postCaption?: string;
+  postType?: 'POST' | 'REEL' | 'CAROUSEL';
+  followMessageText?: string;
+  profileUrl?: string;
+  visitProfileText?: string;
+  followingButtonText?: string;
+  publicReplyText?: string;
+  finalDmText?: string;
   tagName?: string;
   leadScoreAdd?: number;
   aiInstructions?: string;
@@ -64,9 +77,39 @@ export interface AutomationNodeData {
 
 export interface AutomationNode {
   id: string;
-  type: 'trigger' | 'message' | 'ai_response' | 'condition' | 'delay' | 'add_tag' | 'create_lead' | 'handoff' | 'end';
+  type: 
+    | 'trigger' 
+    | 'post_trigger'
+    | 'comment_condition'
+    | 'message' 
+    | 'ai_response' 
+    | 'condition' 
+    | 'delay' 
+    | 'follow_request'
+    | 'public_reply'
+    | 'send_dm'
+    | 'add_tag' 
+    | 'create_lead' 
+    | 'handoff' 
+    | 'end';
   position: { x: number; y: number };
   data: AutomationNodeData;
+}
+
+export interface AutoDMConfig {
+  postId: string;
+  postImage?: string;
+  postCaption?: string;
+  postType?: string;
+  commentCondition: 'ANY' | 'CONTAINS' | 'EXACT' | 'MULTIPLE';
+  keywords: string[];
+  delaySeconds: number;
+  followMessageText: string;
+  profileUrl: string;
+  visitProfileText: string;
+  followingButtonText: string;
+  publicReplyText: string;
+  finalDmText: string;
 }
 
 export interface Automation {
@@ -79,6 +122,8 @@ export interface Automation {
   triggerKeyword?: string;
   postId?: string;
   postCaption?: string;
+  postImage?: string;
+  autoDmConfig?: AutoDMConfig;
   nodes: AutomationNode[];
   executionCount: number;
   conversionCount: number;

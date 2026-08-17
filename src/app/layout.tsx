@@ -2,18 +2,18 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'DMFlow AI - Turn Instagram Followers Into Customers With AI',
+  title: 'Smrits AutoDM AI - Turn Instagram Followers Into Customers With AI',
   description: 'Full-stack Instagram DM automation, AI agent chatbot, lead CRM, link-in-bio builder, digital products & analytics platform.',
   openGraph: {
-    title: 'DMFlow AI - Turn Instagram Followers Into Customers With AI',
+    title: 'Smrits AutoDM AI - Turn Instagram Followers Into Customers With AI',
     description: 'Automate eligible Instagram conversations, capture leads in real-time, and let AI help turn followers into customers.',
-    url: 'https://dmflow.ai',
-    siteName: 'DMFlow AI',
+    url: 'https://smrits.ai',
+    siteName: 'Smrits AutoDM AI',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'DMFlow AI',
+    title: 'Smrits AutoDM AI',
     description: 'Turn Instagram Followers Into Customers With AI.',
   },
 };

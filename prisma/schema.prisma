@@ -1,4 +1,4 @@
-// Prisma Schema for DMFlow AI - Production & Local Demo Database
+// Prisma Schema for DMFlow AI - PostgreSQL & Local SQLite Compatible
 
 datasource db {
   provider = "sqlite"
@@ -7,36 +7,6 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-}
-
-enum Role {
-  OWNER
-  ADMIN
-  AGENT
-  VIEWER
-}
-
-enum InstagramStatus {
-  CONNECTED
-  DISCONNECTED
-  TOKEN_EXPIRED
-  NEEDS_RECONNECT
-}
-
-enum AutomationStatus {
-  DRAFT
-  ACTIVE
-  PAUSED
-  ERROR
-}
-
-enum LeadStatus {
-  NEW
-  CONTACTED
-  QUALIFIED
-  INTERESTED
-  CONVERTED
-  LOST
 }
 
 model User {
@@ -80,43 +50,43 @@ model Membership {
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  role           Role         @default(ADMIN)
+  role           String       @default("ADMIN")
   createdAt      DateTime     @default(now())
 
   @@unique([userId, organizationId])
 }
 
 model InstagramAccount {
-  id                   String          @id @default(cuid())
+  id                   String       @id @default(cuid())
   organizationId       String
-  organization         Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  instagramUserId      String          @unique
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  instagramUserId      String       @unique
   username             String
   profileImage         String?
   accessTokenEncrypted String?
   tokenExpiresAt       DateTime?
-  status               InstagramStatus @default(CONNECTED)
-  followersCount       Int             @default(0)
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
+  status               String       @default("CONNECTED")
+  followersCount       Int          @default(0)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 }
 
 model Automation {
-  id             String           @id @default(cuid())
-  organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name           String
-  description    String?
-  status         AutomationStatus @default(DRAFT)
-  triggerType    String
-  triggerKeyword String?
-  postId         String?
-  postCaption    String?
-  nodesJson      String           @default("[]")
-  executionCount Int              @default(0)
-  conversionCount Int             @default(0)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  status          String       @default("DRAFT")
+  triggerType     String
+  triggerKeyword  String?
+  postId          String?
+  postCaption     String?
+  nodesJson       String       @default("[]")
+  executionCount  Int          @default(0)
+  conversionCount Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 }
 
 model Conversation {
@@ -157,7 +127,7 @@ model Lead {
   phone             String?
   company           String?
   budget            String?
-  status            LeadStatus     @default(NEW)
+  status            String         @default("NEW")
   leadScore         Int            @default(20)
   tagsJson          String         @default("[]")
   notes             String?

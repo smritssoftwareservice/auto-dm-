@@ -1,7 +1,7 @@
 import { AppMode } from '@/types';
 
 export const APP_CONFIG = {
-  name: 'DMFlow AI',
+  name: 'Smrits AutoDM AI',
   tagline: 'Turn Instagram Followers Into Customers With AI.',
   version: '1.0.0',
   mode: (process.env.NEXT_PUBLIC_APP_MODE || 'demo') as AppMode,

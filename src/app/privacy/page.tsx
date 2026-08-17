@@ -1,0 +1,36 @@
+import React from 'react';
+import Link from 'next/link';
+import { Zap, ShieldCheck } from 'lucide-react';
+
+export default function PrivacyPolicyPage() {
+  return (
+    <div className="min-h-screen bg-[#09090b] text-slate-100 p-6 md:p-12 text-left max-w-4xl mx-auto space-y-6">
+      <Link href="/" className="inline-flex items-center gap-2 mb-4">
+        <div className="w-8 h-8 rounded-xl bg-purple-600 flex items-center justify-center">
+          <Zap className="w-4 h-4 text-white fill-white" />
+        </div>
+        <span className="text-lg font-bold tracking-tight text-white">DMFlow <span className="gradient-text">AI</span></span>
+      </Link>
+
+      <h1 className="text-3xl font-extrabold text-white">Privacy Policy</h1>
+      <p className="text-xs text-slate-400">Last updated: August 17, 2026</p>
+
+      <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-4 text-xs leading-relaxed text-slate-300">
+        <h2 className="text-sm font-bold text-white">1. Meta / Instagram Data Usage</h2>
+        <p>
+          DMFlow AI accesses user data strictly via official Meta Graph APIs and OAuth permissions authorized directly by the account owner. We do not store Instagram account passwords.
+        </p>
+
+        <h2 className="text-sm font-bold text-white">2. Multi-Tenant Organization Isolation</h2>
+        <p>
+          Customer information, lead CRM details, and conversation histories are strictly isolated per organization using strict organization_id filters.
+        </p>
+
+        <h2 className="text-sm font-bold text-white">3. Third-Party Affiliation Disclosure</h2>
+        <p className="text-purple-300 font-semibold">
+          DMFlow AI is an independent software product and is not endorsed by or affiliated with Meta Platforms, Inc. or Instagram unless officially applicable.
+        </p>
+      </div>
+    </div>
+  );
+}

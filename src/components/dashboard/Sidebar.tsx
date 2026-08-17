@@ -4,15 +4,16 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  LayoutDashboard, Instagram, Zap, Play, MessageSquare, Bot, 
+  LayoutDashboard, Zap, Play, MessageSquare, Bot, 
   Users, Link2, ShoppingBag, FormInput, Megaphone, Layers, 
   BarChart3, UserPlus, CreditCard, Settings, ShieldCheck, LogOut
 } from 'lucide-react';
+import { InstagramIcon } from '@/components/common/InstagramIcon';
 import { DEMO_ORGANIZATION } from '@/lib/mock-data';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Instagram', href: '/dashboard/instagram', icon: Instagram },
+  { label: 'Instagram', href: '/dashboard/instagram', icon: InstagramIcon },
   { label: 'Automations', href: '/dashboard/automations', icon: Zap },
   { label: 'IG Simulator', href: '/dashboard/simulator', icon: Play, badge: 'DEMO' },
   { label: 'Inbox', href: '/dashboard/inbox', icon: MessageSquare, count: 1 },
@@ -42,7 +43,7 @@ export default function Sidebar() {
             <Zap className="w-5 h-5 text-white fill-white" />
           </div>
           <div>
-            <span className="text-lg font-bold tracking-tight text-white block leading-tight">DMFlow <span className="gradient-text">AI</span></span>
+            <span className="text-base font-bold tracking-tight text-white block leading-tight">Smrits <span className="gradient-text">AutoDM</span></span>
             <span className="text-[10px] text-purple-400 font-semibold uppercase tracking-wider block">{DEMO_ORGANIZATION.name}</span>
           </div>
         </Link>

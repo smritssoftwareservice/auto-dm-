@@ -39,18 +39,41 @@ export const DEMO_AUTOMATIONS: Automation[] = [
   {
     id: 'auto_1_price',
     organizationId: DEMO_ORGANIZATION.id,
-    name: 'Pricing & Course Comment-to-DM',
-    description: 'Triggers when user comments "PRICE" on post about AI Masterclass.',
+    name: 'Instagram Post Comment Auto-DM',
+    description: 'When someone comments on post, wait 30s, ask to follow, reply publicly, and send final DM payload.',
     status: 'ACTIVE',
     triggerType: 'INSTAGRAM_COMMENT_KEYWORD',
-    triggerKeyword: 'PRICE',
-    postId: 'post_101',
-    postCaption: '🚀 Launched our 2026 AI Growth Masterclass! Comment PRICE for discount link!',
+    triggerKeyword: 'GUIDE',
+    postId: 'post_1',
+    postCaption: 'Comment "GUIDE" to get my free 10-step AI Instagram Growth Blueprint 🚀👇',
+    postImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+    autoDmConfig: {
+      postId: 'post_1',
+      postImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+      postCaption: 'Comment "GUIDE" to get my free 10-step AI Instagram Growth Blueprint 🚀👇',
+      postType: 'POST',
+      commentCondition: 'CONTAINS',
+      keywords: ['GUIDE', 'PRICE', 'COURSE'],
+      delaySeconds: 30,
+      followMessageText: "Almost there !\n\nPlease visit my profile and tap follow to continue 😁",
+      profileUrl: "https://instagram.com/demo_creator",
+      visitProfileText: "Visit Profile",
+      followingButtonText: "I'm following ✅",
+      publicReplyText: "@user Sent you a message! Check it out!",
+      finalDmText: `Here are the steps:
+
+Step 1: Upload your Resume in Claude
+Step 2: Copy and paste the job description in Claude
+Step 3: Paste the below prompt
+
+Prompt:
+"I have attached my resume along with the job descriptions for the roles I want to apply for. Your task is to customize my resume for maximum ATS match score."`,
+    },
     nodes: [
-      { id: '1', type: 'trigger', position: { x: 250, y: 50 }, data: { label: 'Comment contains "PRICE"', keyword: 'PRICE' } },
-      { id: '2', type: 'message', position: { x: 250, y: 180 }, data: { label: 'Send Welcome DM', messageText: 'Hey {{first_name}} 👋 Thanks for commenting! Here is the direct access link to our AI Masterclass with 30% off: https://dmflow.ai/p/ai-masterclass' } },
+      { id: '1', type: 'trigger', position: { x: 250, y: 50 }, data: { label: 'Comment contains "GUIDE"', keyword: 'GUIDE' } },
+      { id: '2', type: 'message', position: { x: 250, y: 180 }, data: { label: 'Send Follow Prompt DM', messageText: 'Almost there ! Please visit my profile and tap follow to continue 😁' } },
       { id: '3', type: 'ai_response', position: { x: 250, y: 310 }, data: { label: 'Handover to AI Assistant', aiInstructions: 'Answer questions about course duration, pricing, and curriculum.' } },
-      { id: '4', type: 'add_tag', position: { x: 250, y: 440 }, data: { label: 'Tag Lead', tagName: 'Masterclass Prospect', leadScoreAdd: 25 } },
+      { id: '4', type: 'add_tag', position: { x: 250, y: 440 }, data: { label: 'Tag Lead', tagName: 'Guide Prospect', leadScoreAdd: 25 } },
     ],
     executionCount: 342,
     conversionCount: 89,

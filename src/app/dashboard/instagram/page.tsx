@@ -3,9 +3,10 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { 
-  Instagram, CheckCircle2, RefreshCw, ShieldAlert, 
+  CheckCircle2, RefreshCw, ShieldAlert, 
   ExternalLink, Key, AlertCircle, Play
 } from 'lucide-react';
+import { InstagramIcon } from '@/components/common/InstagramIcon';
 import { DEMO_INSTAGRAM_ACCOUNT } from '@/lib/mock-data';
 
 export default function InstagramPage() {
@@ -19,7 +20,7 @@ export default function InstagramPage() {
     <div className="space-y-8 text-left max-w-5xl">
       <div className="border-b border-white/10 pb-6">
         <h1 className="text-2xl md:text-3xl font-extrabold text-white flex items-center gap-3">
-          <Instagram className="w-8 h-8 text-pink-400" /> Instagram Account Connection
+          <InstagramIcon className="w-8 h-8 text-pink-400" /> Instagram Account Connection
         </h1>
         <p className="text-xs md:text-sm text-slate-400 mt-1">
           Manage your connected Meta Instagram Professional account and Graph API access tokens.

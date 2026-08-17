@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { 
   Bot, MessageSquare, Zap, Users, Link2, ShoppingBag, 
   BarChart3, Sparkles, ArrowRight, CheckCircle2, ShieldCheck, 
-  Play, HelpCircle, Layers, Star, Instagram, ChevronRight
+  Play, HelpCircle, Layers, Star, ChevronRight
 } from 'lucide-react';
+import { InstagramIcon } from '@/components/common/InstagramIcon';
 
 export default function LandingPage() {
   const [activeTab, setActiveTab] = useState<'automation' | 'ai' | 'crm' | 'bio'>('automation');
