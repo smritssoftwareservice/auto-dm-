@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processInstagramTriggerEvent } from '@/lib/automations/engine';
 import { prisma } from '@/lib/prisma';
+import { verifyMetaSignature, sendInstagramDM, replyToInstagramComment } from '@/lib/meta/instagram';
+
+// In-memory idempotency cache to prevent processing duplicate Meta webhook deliveries
+const processedEventIds = new Set<string>();
 
 // GET - Meta Webhook Handshake / Verification
 export async function GET(req: NextRequest) {
@@ -12,7 +16,7 @@ export async function GET(req: NextRequest) {
   const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN || 'dmflow_webhook_verify_token_123';
 
   if (mode === 'subscribe' && token === verifyToken) {
-    console.log('[Meta Webhook Verified Successfully]');
+    console.log('[Meta Webhook Verification Success]');
     return new NextResponse(challenge, { status: 200 });
   }
 
@@ -22,34 +26,38 @@ export async function GET(req: NextRequest) {
 // POST - Meta Live Webhook Event Notification (Incoming DM / Comment / Mention)
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const rawBody = await req.text();
+    const signature = req.headers.get('x-hub-signature-256');
+    const appSecret = process.env.META_APP_SECRET || '';
 
-    // Log raw incoming event
-    console.log('[Meta Instagram Event Received]:', JSON.stringify(body, null, 2));
-
-    // Store raw webhook payload in database error/audit log if available
-    try {
-      if (prisma.webhookEvent) {
-        await prisma.webhookEvent.create({
-          data: {
-            eventId: `evt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-            provider: 'instagram',
-            type: body.entry?.[0]?.messaging?.[0] ? 'INSTAGRAM_DM' : 'INSTAGRAM_COMMENT',
-            payload: JSON.stringify(body),
-            status: 'PROCESSED',
-          },
-        });
-      }
-    } catch {
-      // Ignore DB error fallback for dev environment
+    // 1. Verify HMAC Signature
+    if (appSecret && !verifyMetaSignature(rawBody, signature, appSecret)) {
+      console.warn('[Meta Webhook Signature Verification Failed]');
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
-    // Process Meta Instagram Messenger Entry
+    const body = JSON.parse(rawBody);
+
+    // 2. Process Meta Instagram Messenger & Comments
     if (body.object === 'instagram' || body.object === 'page') {
       for (const entry of body.entry || []) {
         // Handle DM Events
         if (entry.messaging) {
           for (const msgEvent of entry.messaging) {
+            const eventId = msgEvent.message?.mid || `${msgEvent.sender?.id}_${msgEvent.timestamp}`;
+            
+            // Idempotency check
+            if (processedEventIds.has(eventId)) {
+              continue;
+            }
+            processedEventIds.add(eventId);
+
+            // Keep cache size bounded
+            if (processedEventIds.size > 2000) {
+              const first = processedEventIds.values().next().value;
+              if (first) processedEventIds.delete(first);
+            }
+
             const senderId = msgEvent.sender?.id;
             const messageText = msgEvent.message?.text || '';
 
@@ -62,16 +70,13 @@ export async function POST(req: NextRequest) {
                 userText: messageText,
               });
 
-              // Send Real Instagram DM if Graph API Token is Configured
-              const pageAccessToken = process.env.META_PAGE_ACCESS_TOKEN;
-              if (pageAccessToken && result.sentMessageText) {
-                await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    recipient: { id: senderId },
-                    message: { text: result.sentMessageText },
-                  }),
+              // Dispatch real Instagram Graph API DM
+              const accessToken = process.env.META_PAGE_ACCESS_TOKEN || process.env.META_APP_SECRET;
+              if (accessToken && result.sentMessageText) {
+                await sendInstagramDM({
+                  recipientId: senderId,
+                  messageText: result.sentMessageText,
+                  accessToken,
                 });
               }
             }
@@ -82,25 +87,39 @@ export async function POST(req: NextRequest) {
         if (entry.changes) {
           for (const change of entry.changes) {
             if (change.field === 'comments') {
+              const commentId = change.value?.id;
               const commentText = change.value?.text || '';
               const fromUsername = change.value?.from?.username || 'ig_user';
 
-              await processInstagramTriggerEvent({
-                organizationId: 'org_demo_123',
-                instagramUsername: fromUsername,
-                triggerType: 'INSTAGRAM_COMMENT_KEYWORD',
-                keyword: commentText.split(' ')[0] || commentText,
-                userText: commentText,
-              });
+              if (commentId && commentText) {
+                const result = await processInstagramTriggerEvent({
+                  organizationId: 'org_demo_123',
+                  instagramUsername: fromUsername,
+                  triggerType: 'INSTAGRAM_COMMENT_KEYWORD',
+                  keyword: commentText.split(' ')[0] || commentText,
+                  userText: commentText,
+                  commentId,
+                });
+
+                // Reply publicly to Instagram Comment if configured
+                const accessToken = process.env.META_PAGE_ACCESS_TOKEN;
+                if (accessToken && result.sentMessageText) {
+                  await replyToInstagramComment({
+                    commentId,
+                    replyText: result.sentMessageText,
+                    accessToken,
+                  });
+                }
+              }
             }
           }
         }
       }
     }
 
-    return NextResponse.json({ status: 'EVENT_RECEIVED' }, { status: 200 });
+    return NextResponse.json({ status: 'EVENT_PROCESSED' }, { status: 200 });
   } catch (error) {
-    console.error('[Meta Webhook Error]:', error);
+    console.error('[Meta Production Webhook Error]:', error);
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 }
