@@ -1,0 +1,310 @@
+// Prisma Schema for DMFlow AI - Production & Local Demo Database
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  AGENT
+  VIEWER
+}
+
+enum InstagramStatus {
+  CONNECTED
+  DISCONNECTED
+  TOKEN_EXPIRED
+  NEEDS_RECONNECT
+}
+
+enum AutomationStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ERROR
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  INTERESTED
+  CONVERTED
+  LOST
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String?
+  avatarUrl    String?
+  memberships  Membership[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model Organization {
+  id                String             @id @default(cuid())
+  name              String
+  slug              String             @unique
+  instagramUsername String?
+  businessCategory  String?
+  plan              String             @default("FREE")
+  memberships       Membership[]
+  instagramAccounts InstagramAccount[]
+  automations       Automation[]
+  leads             Lead[]
+  conversations     Conversation[]
+  aiConfigurations  AIConfiguration[]
+  knowledgeDocs     KnowledgeDocument[]
+  linkPages         LinkPage[]
+  products          DigitalProduct[]
+  forms             Form[]
+  campaigns         Campaign[]
+  subscriptions     Subscription[]
+  usageEvents       UsageEvent[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           Role         @default(ADMIN)
+  createdAt      DateTime     @default(now())
+
+  @@unique([userId, organizationId])
+}
+
+model InstagramAccount {
+  id                   String          @id @default(cuid())
+  organizationId       String
+  organization         Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  instagramUserId      String          @unique
+  username             String
+  profileImage         String?
+  accessTokenEncrypted String?
+  tokenExpiresAt       DateTime?
+  status               InstagramStatus @default(CONNECTED)
+  followersCount       Int             @default(0)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+}
+
+model Automation {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  status         AutomationStatus @default(DRAFT)
+  triggerType    String
+  triggerKeyword String?
+  postId         String?
+  postCaption    String?
+  nodesJson      String           @default("[]")
+  executionCount Int              @default(0)
+  conversionCount Int             @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model Conversation {
+  id                String       @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  instagramUsername String
+  userAvatar        String?
+  leadId            String?
+  lead              Lead?        @relation(fields: [leadId], references: [id])
+  status            String       @default("UNREAD")
+  aiMode            String       @default("ACTIVE")
+  lastMessageText   String
+  lastMessageAt     DateTime     @default(now())
+  unreadCount       Int          @default(0)
+  messages          Message[]
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         String
+  text           String
+  delivered      Boolean      @default(true)
+  timestamp      DateTime     @default(now())
+}
+
+model Lead {
+  id                String         @id @default(cuid())
+  organizationId    String
+  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name              String
+  instagramUsername String
+  email             String?
+  phone             String?
+  company           String?
+  budget            String?
+  status            LeadStatus     @default(NEW)
+  leadScore         Int            @default(20)
+  tagsJson          String         @default("[]")
+  notes             String?
+  conversations     Conversation[]
+  createdAt         DateTime       @default(now())
+  lastInteractionAt DateTime       @default(now())
+}
+
+model AIConfiguration {
+  id                  String       @id @default(cuid())
+  organizationId      String       @unique
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agentName           String       @default("AI Assistant")
+  businessDescription String
+  websiteUrl          String?
+  tone                String       @default("Friendly")
+  instructions        String
+  fallbackMessage     String
+  handoffMessage      String
+  status              String       @default("ACTIVE")
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+}
+
+model KnowledgeDocument {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  category       String       @default("FAQ")
+  content        String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model LinkPage {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  username       String       @unique
+  title          String
+  bio            String
+  avatarUrl      String
+  theme          String       @default("glass")
+  viewsCount     Int          @default(0)
+  clicksCount    Int          @default(0)
+  published      Boolean      @default(true)
+  blocks         LinkBlock[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model LinkBlock {
+  id         String   @id @default(cuid())
+  linkPageId String
+  linkPage   LinkPage @relation(fields: [linkPageId], references: [id], onDelete: Cascade)
+  type       String
+  title      String
+  url        String?
+  content    String?
+  iconName   String?
+  enabled    Boolean  @default(true)
+  order      Int      @default(0)
+}
+
+model DigitalProduct {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  description    String
+  price          Float
+  currency       String       @default("USD")
+  type           String
+  productUrl     String
+  imageUrl       String?
+  salesCount     Int          @default(0)
+  revenue        Float        @default(0)
+  status         String       @default("ACTIVE")
+  createdAt      DateTime     @default(now())
+}
+
+model Form {
+  id               String       @id @default(cuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title            String
+  description      String?
+  fieldsJson       String       @default("[]")
+  submissionsCount Int          @default(0)
+  createdAt        DateTime     @default(now())
+}
+
+model Campaign {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  type           String
+  description    String
+  ctaText        String
+  linkUrl        String
+  views          Int          @default(0)
+  clicks         Int          @default(0)
+  leadsCaptured  Int          @default(0)
+  status         String       @default("ACTIVE")
+  createdAt      DateTime     @default(now())
+}
+
+model Subscription {
+  id                   String       @id @default(cuid())
+  organizationId       String       @unique
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  plan                 String       @default("FREE")
+  status               String       @default("active")
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+}
+
+model UsageEvent {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  eventType      String
+  count          Int          @default(1)
+  timestamp      DateTime     @default(now())
+}
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  provider    String   @default("instagram")
+  type        String
+  payload     String
+  status      String   @default("PROCESSED")
+  processedAt DateTime @default(now())
+  error       String?
+}
+
+model ErrorLog {
+  id             String   @id @default(cuid())
+  organizationId String?
+  route          String
+  error          String
+  stack          String?
+  createdAt      DateTime @default(now())
+}
