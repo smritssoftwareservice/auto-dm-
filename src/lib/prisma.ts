@@ -28,7 +28,7 @@ function resolveDatabaseUrl(): string {
     if (process.env.VERCEL) {
       const tmpPath = path.join('/tmp', path.basename(relativePath));
       try {
-        if (!fs.existsSync(tmpPath) && fs.existsSync(absoluteDbPath)) {
+        if (!fs.existsSync(tmpPath) && fs.existsSync(/*turbopackIgnore: true*/ absoluteDbPath)) {
           fs.copyFileSync(absoluteDbPath, tmpPath);
         }
       } catch (err) {
