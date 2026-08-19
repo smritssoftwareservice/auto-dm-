@@ -113,7 +113,8 @@ export async function POST(req: NextRequest) {
                 userText: messageText,
               });
 
-              const accessToken = accessTokenEncrypted || process.env.META_PAGE_ACCESS_TOKEN || process.env.META_APP_SECRET;
+              // Must use a Page Access Token, NOT an App Secret
+              const accessToken = accessTokenEncrypted || process.env.META_PAGE_ACCESS_TOKEN;
               if (accessToken && result.sentMessageText) {
                 await sendInstagramDM({
                   recipientId: senderId,

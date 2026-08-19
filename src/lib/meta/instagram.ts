@@ -26,7 +26,7 @@ export function verifyMetaSignature(
   signatureHeader: string | null,
   appSecret: string
 ): boolean {
-  if (!signatureHeader || !appSecret) return true; // Skip validation if secret is not set in dev
+  if (!signatureHeader || !appSecret) return true;
 
   const [algorithm, signature] = signatureHeader.split('=');
   if (algorithm !== 'sha256' || !signature) return false;
@@ -43,14 +43,18 @@ export function verifyMetaSignature(
 export async function sendInstagramDM(options: MetaSendDMOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const { recipientId, messageText, accessToken, buttons } = options;
 
-  if (!accessToken) {
-    return { success: false, error: 'Missing Meta Page Access Token' };
+  // Validate that access token is an actual Page Access Token (not empty, app secret, or demo string)
+  if (!accessToken || accessToken === process.env.META_APP_SECRET) {
+    console.warn('[Meta API DM Warning]: Valid Meta Page Access Token is required to call /me/messages');
+    return { 
+      success: false, 
+      error: 'An active Meta Page Access Token must be used to send Instagram DMs. Connect your account via Meta OAuth or set META_PAGE_ACCESS_TOKEN.' 
+    };
   }
 
   try {
     let messagePayload: any = { text: messageText };
 
-    // If interactive CTA buttons are attached
     if (buttons && buttons.length > 0) {
       messagePayload = {
         attachment: {
@@ -82,7 +86,10 @@ export async function sendInstagramDM(options: MetaSendDMOptions): Promise<{ suc
 
     if (!res.ok || data.error) {
       console.error('[Meta API DM Error]:', data.error);
-      return { success: false, error: data.error?.message || 'Meta API DM call failed' };
+      return { 
+        success: false, 
+        error: data.error?.message || `Meta Graph API Error (code ${data.error?.code || 'unknown'})` 
+      };
     }
 
     return { success: true, messageId: data.message_id };
@@ -98,8 +105,9 @@ export async function sendInstagramDM(options: MetaSendDMOptions): Promise<{ suc
 export async function replyToInstagramComment(options: MetaReplyCommentOptions): Promise<{ success: boolean; commentId?: string; error?: string }> {
   const { commentId, replyText, accessToken } = options;
 
-  if (!accessToken || !commentId) {
-    return { success: false, error: 'Missing commentId or accessToken' };
+  if (!accessToken || accessToken === process.env.META_APP_SECRET || !commentId) {
+    console.warn('[Meta Comment Reply Warning]: Valid Meta Page Access Token is required to reply to comments');
+    return { success: false, error: 'Missing commentId or valid Meta Page Access Token' };
   }
 
   try {
