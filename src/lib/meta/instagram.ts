@@ -38,13 +38,27 @@ export function verifyMetaSignature(
 }
 
 /**
+ * Clean and sanitize access tokens by removing whitespace, trailing comments, or copy-paste artifacts
+ */
+function sanitizeToken(token: string): string {
+  if (!token) return '';
+  // Extract token starting with EAA... or trim whitespace
+  const trimmed = token.trim();
+  const match = trimmed.match(/(EAA[A-Za-z0-9]+)/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  return trimmed.split(/\s+/)[0];
+}
+
+/**
  * Sends a Direct Message (DM) to an Instagram user via Meta Graph API v19.0
  */
 export async function sendInstagramDM(options: MetaSendDMOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const { recipientId, messageText, accessToken, buttons } = options;
+  const cleanAccessToken = sanitizeToken(accessToken);
 
-  // Validate that access token is an actual Page Access Token (not empty, app secret, or demo string)
-  if (!accessToken || accessToken === process.env.META_APP_SECRET) {
+  if (!cleanAccessToken || cleanAccessToken === process.env.META_APP_SECRET) {
     console.warn('[Meta API DM Warning]: Valid Meta Page Access Token is required to call /me/messages');
     return { 
       success: false, 
@@ -73,7 +87,7 @@ export async function sendInstagramDM(options: MetaSendDMOptions): Promise<{ suc
       };
     }
 
-    const res = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(accessToken)}`, {
+    const res = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${cleanAccessToken}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -104,14 +118,15 @@ export async function sendInstagramDM(options: MetaSendDMOptions): Promise<{ suc
  */
 export async function replyToInstagramComment(options: MetaReplyCommentOptions): Promise<{ success: boolean; commentId?: string; error?: string }> {
   const { commentId, replyText, accessToken } = options;
+  const cleanAccessToken = sanitizeToken(accessToken);
 
-  if (!accessToken || accessToken === process.env.META_APP_SECRET || !commentId) {
+  if (!cleanAccessToken || cleanAccessToken === process.env.META_APP_SECRET || !commentId) {
     console.warn('[Meta Comment Reply Warning]: Valid Meta Page Access Token is required to reply to comments');
     return { success: false, error: 'Missing commentId or valid Meta Page Access Token' };
   }
 
   try {
-    const res = await fetch(`https://graph.facebook.com/v19.0/${encodeURIComponent(commentId)}/replies?access_token=${encodeURIComponent(accessToken)}`, {
+    const res = await fetch(`https://graph.facebook.com/v19.0/${encodeURIComponent(commentId)}/replies?access_token=${cleanAccessToken}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
