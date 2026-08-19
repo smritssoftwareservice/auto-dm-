@@ -1,21 +1,41 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Users, Download, Plus, Search, Filter, 
-  Tag, Edit, Trash2, CheckCircle2, ChevronDown, Sparkles 
+  Tag, Edit, Trash2, CheckCircle2, ChevronDown, Sparkles, AlertCircle 
 } from 'lucide-react';
-import { DEMO_LEADS } from '@/lib/mock-data';
 import { Lead, LeadStatus } from '@/types';
 
 export default function LeadsCRMPage() {
-  const [leads, setLeads] = useState<Lead[]>(DEMO_LEADS);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | LeadStatus>('ALL');
+  const [loading, setLoading] = useState(true);
   const [showCustomFieldModal, setShowCustomFieldModal] = useState(false);
   const [customFieldName, setCustomFieldName] = useState('');
   const [customFieldType, setCustomFieldType] = useState('Text');
+  const [savedNotice, setSavedNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchLeads();
+  }, []);
+
+  async function fetchLeads() {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/leads');
+      if (res.ok) {
+        const data = await res.json();
+        setLeads(data.leads || []);
+      }
+    } catch (err) {
+      console.error('Failed to load leads from database', err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const filtered = leads.filter(lead => {
     const matchesSearch = lead.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -27,7 +47,10 @@ export default function LeadsCRMPage() {
 
   const exportCSV = () => {
     const headers = 'Name,Instagram,Email,Phone,Status,Score,Tags\n';
-    const rows = filtered.map(l => `"${l.name}","@${l.instagramUsername}","${l.email || ''}","${l.phone || ''}","${l.status}",${l.leadScore},"${l.tags.join(';')}"`).join('\n');
+    const rows = filtered.map(l => {
+      const tagsList = typeof l.tags === 'string' ? JSON.parse(l.tags || '[]') : (l.tags || []);
+      return `"${l.name}","@${l.instagramUsername}","${l.email || ''}","${l.phone || ''}","${l.status}",${l.leadScore},"${tagsList.join(';')}"`;
+    }).join('\n');
     const blob = new Blob([headers + rows], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -64,12 +87,19 @@ export default function LeadsCRMPage() {
           </button>
           <button
             onClick={exportCSV}
-            className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg shadow-purple-600/30 hover:opacity-95 transition-all flex items-center gap-2"
+            disabled={leads.length === 0}
+            className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg shadow-purple-600/30 hover:opacity-95 transition-all flex items-center gap-2 disabled:opacity-50"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
         </div>
       </div>
+
+      {savedNotice && (
+        <div className="p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-semibold">
+          {savedNotice}
+        </div>
+      )}
 
       {/* Filter & Search Bar */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -101,65 +131,91 @@ export default function LeadsCRMPage() {
 
       {/* CRM Leads Table */}
       <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950 border-b border-white/10 text-slate-400 font-semibold uppercase tracking-wider">
-              <tr>
-                <th className="p-4">Contact / Instagram</th>
-                <th className="p-4">Lead Score</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Budget</th>
-                <th className="p-4">Tags</th>
-                <th className="p-4">Last Interaction</th>
-                <th className="p-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5 text-slate-300">
-              {filtered.map(lead => (
-                <tr key={lead.id} className="hover:bg-purple-950/20 transition-colors">
-                  <td className="p-4">
-                    <div>
-                      <span className="font-bold text-white block text-sm">{lead.name}</span>
-                      <span className="text-purple-400 font-medium">@{lead.instagramUsername}</span>
-                      {lead.email && <span className="text-slate-500 block text-[11px] mt-0.5">{lead.email}</span>}
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    {getScoreBadge(lead.leadScore)}
-                  </td>
-                  <td className="p-4">
-                    <span className="px-2.5 py-1 rounded-full bg-slate-900 border border-white/10 text-purple-300 font-bold text-[10px]">
-                      {lead.status}
-                    </span>
-                  </td>
-                  <td className="p-4 font-semibold text-emerald-400">
-                    {lead.budget || 'N/A'}
-                  </td>
-                  <td className="p-4">
-                    <div className="flex flex-wrap gap-1 max-w-xs">
-                      {lead.tags.map((tg, idx) => (
-                        <span key={idx} className="px-2 py-0.5 rounded bg-purple-950/60 border border-purple-500/30 text-purple-300 text-[10px]">
-                          {tg}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="p-4 text-slate-400 text-[11px]">
-                    {new Date(lead.lastInteractionAt).toLocaleDateString()}
-                  </td>
-                  <td className="p-4 text-right">
-                    <Link
-                      href="/dashboard/inbox"
-                      className="px-3 py-1.5 rounded-lg bg-purple-600/30 text-purple-300 font-bold hover:bg-purple-600 hover:text-white transition-all inline-block"
-                    >
-                      Chat DM
-                    </Link>
-                  </td>
+        {loading ? (
+          <div className="p-12 text-center text-slate-400 text-xs">Loading lead database...</div>
+        ) : filtered.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-950 border-b border-white/10 text-slate-400 font-semibold uppercase tracking-wider">
+                <tr>
+                  <th className="p-4">Contact / Instagram</th>
+                  <th className="p-4">Lead Score</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4">Budget</th>
+                  <th className="p-4">Tags</th>
+                  <th className="p-4">Last Interaction</th>
+                  <th className="p-4 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-slate-300">
+                {filtered.map(lead => {
+                  const tagsList: string[] = typeof lead.tags === 'string' 
+                    ? JSON.parse(lead.tags || '[]') 
+                    : (Array.isArray(lead.tags) ? lead.tags : []);
+
+                  return (
+                    <tr key={lead.id} className="hover:bg-purple-950/20 transition-colors">
+                      <td className="p-4">
+                        <div>
+                          <span className="font-bold text-white block text-sm">{lead.name}</span>
+                          <span className="text-purple-400 font-medium">@{lead.instagramUsername}</span>
+                          {lead.email && <span className="text-slate-500 block text-[11px] mt-0.5">{lead.email}</span>}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        {getScoreBadge(lead.leadScore)}
+                      </td>
+                      <td className="p-4">
+                        <span className="px-2.5 py-1 rounded-full bg-slate-900 border border-white/10 text-purple-300 font-bold text-[10px]">
+                          {lead.status}
+                        </span>
+                      </td>
+                      <td className="p-4 font-semibold text-emerald-400">
+                        {lead.budget || 'N/A'}
+                      </td>
+                      <td className="p-4">
+                        <div className="flex flex-wrap gap-1 max-w-xs">
+                          {tagsList.map((tg, idx) => (
+                            <span key={idx} className="px-2 py-0.5 rounded bg-purple-950/60 border border-purple-500/30 text-purple-300 text-[10px]">
+                              {tg}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="p-4 text-slate-400 text-[11px]">
+                        {new Date(lead.lastInteractionAt).toLocaleDateString()}
+                      </td>
+                      <td className="p-4 text-right">
+                        <Link
+                          href="/dashboard/inbox"
+                          className="px-3 py-1.5 rounded-lg bg-purple-600/30 text-purple-300 font-bold hover:bg-purple-600 hover:text-white transition-all inline-block"
+                        >
+                          Chat DM
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-12 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center mx-auto text-slate-400">
+              <Users className="w-6 h-6 text-purple-400" />
+            </div>
+            <h3 className="text-base font-bold text-white">No CRM Leads Found</h3>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              When users comment on your Instagram posts or submit forms, their contacts and lead scores will automatically populate here.
+            </p>
+            <Link
+              href="/dashboard/simulator"
+              className="inline-block px-4 py-2 rounded-xl bg-purple-600 text-xs font-bold text-white hover:bg-purple-500 transition-all"
+            >
+              Test Comment Trigger in IG Simulator
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Custom Lead Field Modal */}
@@ -199,7 +255,11 @@ export default function LeadsCRMPage() {
                 Cancel
               </button>
               <button
-                onClick={() => { alert(`Custom Field "${customFieldName}" created!`); setShowCustomFieldModal(false); }}
+                onClick={() => {
+                  setSavedNotice(`Custom Field "${customFieldName || 'New Field'}" Saved!`);
+                  setShowCustomFieldModal(false);
+                  setTimeout(() => setSavedNotice(null), 3000);
+                }}
                 className="flex-1 py-2 rounded-xl bg-purple-600 text-xs font-bold text-white shadow"
               >
                 Save Field

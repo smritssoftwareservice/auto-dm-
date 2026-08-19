@@ -3,20 +3,40 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Zap, ArrowRight, Lock, Mail, Globe } from 'lucide-react';
+import { Zap, ArrowRight, Lock, Mail, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('vamshi@dmflow.ai');
-  const [password, setPassword] = useState('demo123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.error || 'Invalid credentials');
+        setLoading(false);
+        return;
+      }
+
       router.push('/dashboard');
-    }, 600);
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+      setLoading(false);
+    }
   };
 
   return (
@@ -34,6 +54,13 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-white pt-2">Welcome Back</h1>
           <p className="text-xs text-slate-400">Sign in to your organization dashboard & CRM</p>
         </div>
+
+        {error && (
+          <div className="p-3.5 rounded-xl bg-red-950/60 border border-red-500/40 text-red-300 text-xs font-semibold flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+            <span>{error}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4 text-left">
           <div>
@@ -54,7 +81,6 @@ export default function LoginPage() {
           <div>
             <div className="flex justify-between items-center mb-1.5">
               <label className="text-xs font-semibold text-slate-300">Password</label>
-              <Link href="/forgot-password" className="text-xs text-purple-400 hover:underline">Forgot?</Link>
             </div>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -72,29 +98,11 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg shadow-purple-600/30 hover:opacity-95 transition-all flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg shadow-purple-600/30 hover:opacity-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {loading ? 'Signing in...' : 'Sign In to Dashboard'} <ArrowRight className="w-4 h-4" />
+            {loading ? 'Authenticating...' : 'Sign In to Dashboard'} <ArrowRight className="w-4 h-4" />
           </button>
         </form>
-
-        <div className="relative flex items-center justify-center my-4">
-          <div className="border-t border-white/10 w-full" />
-          <span className="bg-[#09090b] px-3 text-[11px] text-slate-500 uppercase tracking-wider font-semibold absolute">Or</span>
-        </div>
-
-        <button
-          onClick={() => router.push('/dashboard')}
-          className="w-full py-2.5 rounded-xl border border-white/10 text-xs font-semibold text-slate-200 hover:bg-white/5 transition-all flex items-center justify-center gap-2"
-        >
-          <Globe className="w-4 h-4 text-blue-400" /> Continue with Google
-        </button>
-
-        <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-500/20 text-center">
-          <span className="text-xs text-purple-300">
-            💡 Quick Demo Credentials pre-filled! Click <strong>Sign In</strong> to proceed.
-          </span>
-        </div>
 
         <p className="text-xs text-center text-slate-400">
           Don't have an account? <Link href="/signup" className="text-purple-400 font-semibold hover:underline">Sign up for free</Link>

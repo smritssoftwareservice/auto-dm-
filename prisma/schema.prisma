@@ -15,6 +15,7 @@ model User {
   name         String
   passwordHash String?
   avatarUrl    String?
+  role         String       @default("USER") // 'SUPERADMIN' | 'USER'
   memberships  Membership[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -40,6 +41,7 @@ model Organization {
   campaigns         Campaign[]
   subscriptions     Subscription[]
   usageEvents       UsageEvent[]
+  notifications     Notification[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 }
@@ -277,4 +279,25 @@ model ErrorLog {
   error          String
   stack          String?
   createdAt      DateTime @default(now())
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String?
+  action         String
+  details        String?
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+}
+
+model Notification {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  message        String
+  type           String       @default("INFO") // 'INFO' | 'WARNING' | 'ERROR' | 'SUCCESS'
+  read           Boolean      @default(false)
+  createdAt      DateTime     @default(now())
 }

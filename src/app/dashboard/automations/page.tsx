@@ -1,19 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Zap, Plus, Play, Layers, CheckCircle2, PauseCircle, 
-  Edit3, Sparkles
+  Edit3, Sparkles, Trash2, AlertCircle 
 } from 'lucide-react';
-import { DEMO_AUTOMATIONS } from '@/lib/mock-data';
 import { Automation, AutomationStatus } from '@/types';
 import AutoDMEditorDrawer from '@/components/automations/AutoDMEditorDrawer';
 import CreateAutomationWizard from '@/components/automations/CreateAutomationWizard';
 
 export default function AutomationsPage() {
-  const [automations, setAutomations] = useState<Automation[]>(DEMO_AUTOMATIONS);
+  const [automations, setAutomations] = useState<Automation[]>([]);
   const [filter, setFilter] = useState<'ALL' | AutomationStatus>('ALL');
+  const [loading, setLoading] = useState(true);
 
   // Selected automation for Auto-DM Side Drawer
   const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null);
@@ -21,17 +21,57 @@ export default function AutomationsPage() {
   // Wizard state
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
+  useEffect(() => {
+    fetchAutomations();
+  }, []);
+
+  async function fetchAutomations() {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/automations');
+      if (res.ok) {
+        const data = await res.json();
+        setAutomations(data.automations || []);
+      }
+    } catch (err) {
+      console.error('Failed to load automations from database', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const filtered = automations.filter(a => filter === 'ALL' || a.status === filter);
 
-  const toggleStatus = (id: string, e?: React.MouseEvent) => {
+  const toggleStatus = async (id: string, currentStatus: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    setAutomations(prev => prev.map(a => {
-      if (a.id === id) {
-        const nextStatus: AutomationStatus = a.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
-        return { ...a, status: nextStatus };
+    const nextStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    try {
+      const res = await fetch(`/api/automations/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+
+      if (res.ok) {
+        setAutomations(prev => prev.map(a => (a.id === id ? { ...a, status: nextStatus } : a)));
       }
-      return a;
-    }));
+    } catch (err) {
+      console.error('Failed to update automation status', err);
+    }
+  };
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this automation flow?')) return;
+
+    try {
+      const res = await fetch(`/api/automations/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setAutomations(prev => prev.filter(a => a.id !== id));
+      }
+    } catch (err) {
+      console.error('Failed to delete automation', err);
+    }
   };
 
   const handleUpdateAutomation = (updated: Automation) => {
@@ -94,75 +134,104 @@ export default function AutomationsPage() {
       </div>
 
       {/* Automations Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtered.map(auto => (
-          <div 
-            key={auto.id} 
-            onClick={() => setEditingAutomation(auto)}
-            className="glass-card rounded-2xl p-6 border border-white/10 hover:border-purple-500/40 transition-all flex flex-col justify-between space-y-4 cursor-pointer group hover:shadow-xl hover:shadow-purple-600/10"
-          >
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 ${
-                  auto.status === 'ACTIVE' 
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
-                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                }`}>
-                  {auto.status === 'ACTIVE' ? <CheckCircle2 className="w-3 h-3" /> : <PauseCircle className="w-3 h-3" />}
-                  {auto.status}
-                </span>
-                <span className="text-[11px] font-mono text-purple-400 font-bold bg-purple-950/60 px-2 py-0.5 rounded border border-purple-500/30">
-                  {auto.triggerKeyword || 'KEYWORD'}
-                </span>
-              </div>
-
-              <div>
-                <h3 className="text-base font-bold text-white group-hover:text-purple-300 transition-colors">
-                  {auto.name}
-                </h3>
-                <p className="text-xs text-slate-400 mt-1 line-clamp-2">{auto.description}</p>
-              </div>
-
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-white/5 grid grid-cols-2 gap-2 text-center text-xs">
-                <div>
-                  <span className="text-slate-500 text-[10px] block">Executions</span>
-                  <span className="text-white font-extrabold">{auto.executionCount}</span>
+      {loading ? (
+        <div className="p-12 text-center text-slate-400 text-xs">Loading automation workflows...</div>
+      ) : filtered.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map(auto => (
+            <div 
+              key={auto.id} 
+              onClick={() => setEditingAutomation(auto)}
+              className="glass-card rounded-2xl p-6 border border-white/10 hover:border-purple-500/40 transition-all flex flex-col justify-between space-y-4 cursor-pointer group hover:shadow-xl hover:shadow-purple-600/10"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 ${
+                    auto.status === 'ACTIVE' 
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                  }`}>
+                    {auto.status === 'ACTIVE' ? <CheckCircle2 className="w-3 h-3" /> : <PauseCircle className="w-3 h-3" />}
+                    {auto.status}
+                  </span>
+                  <span className="text-[11px] font-mono text-purple-400 font-bold bg-purple-950/60 px-2 py-0.5 rounded border border-purple-500/30">
+                    {auto.triggerKeyword || 'KEYWORD'}
+                  </span>
                 </div>
+
                 <div>
-                  <span className="text-slate-500 text-[10px] block">Conversions</span>
-                  <span className="text-emerald-400 font-extrabold">{auto.conversionCount}</span>
+                  <h3 className="text-base font-bold text-white group-hover:text-purple-300 transition-colors">
+                    {auto.name}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 line-clamp-2">{auto.description}</p>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-slate-900/80 border border-white/5 grid grid-cols-2 gap-2 text-center text-xs">
+                  <div>
+                    <span className="text-slate-500 text-[10px] block">Executions</span>
+                    <span className="text-white font-extrabold">{auto.executionCount || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-[10px] block">Conversions</span>
+                    <span className="text-emerald-400 font-extrabold">{auto.conversionCount || 0}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-white/10 pt-4 text-xs">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => toggleStatus(auto.id, auto.status, e)}
+                    className="text-slate-400 hover:text-white font-medium"
+                  >
+                    {auto.status === 'ACTIVE' ? 'Pause' : 'Activate'}
+                  </button>
+                  <button
+                    onClick={(e) => handleDelete(auto.id, e)}
+                    className="text-slate-600 hover:text-red-400 ml-1"
+                    title="Delete Automation"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/dashboard/simulator"
+                    onClick={e => e.stopPropagation()}
+                    className="p-1.5 rounded-lg bg-slate-900 border border-white/10 text-slate-300 hover:text-purple-400"
+                    title="Test in Simulator"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                  </Link>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setEditingAutomation(auto); }}
+                    className="px-3 py-1.5 rounded-lg bg-purple-600/30 border border-purple-500/40 text-purple-300 font-bold hover:bg-purple-600 hover:text-white transition-all flex items-center gap-1"
+                  >
+                    <Edit3 className="w-3 h-3" /> Edit Flow
+                  </button>
                 </div>
               </div>
             </div>
-
-            <div className="flex items-center justify-between border-t border-white/10 pt-4 text-xs">
-              <button
-                onClick={(e) => toggleStatus(auto.id, e)}
-                className="text-slate-400 hover:text-white font-medium"
-              >
-                {auto.status === 'ACTIVE' ? 'Pause' : 'Activate'}
-              </button>
-
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/dashboard/simulator"
-                  onClick={e => e.stopPropagation()}
-                  className="p-1.5 rounded-lg bg-slate-900 border border-white/10 text-slate-300 hover:text-purple-400"
-                  title="Test in Simulator"
-                >
-                  <Play className="w-3.5 h-3.5" />
-                </Link>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setEditingAutomation(auto); }}
-                  className="px-3 py-1.5 rounded-lg bg-purple-600/30 border border-purple-500/40 text-purple-300 font-bold hover:bg-purple-600 hover:text-white transition-all flex items-center gap-1"
-                >
-                  <Edit3 className="w-3 h-3" /> Edit Flow
-                </button>
-              </div>
-            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="glass-panel p-12 rounded-3xl border border-white/10 text-center space-y-3">
+          <div className="w-12 h-12 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center mx-auto text-slate-400">
+            <Zap className="w-6 h-6 text-purple-400" />
           </div>
-        ))}
-      </div>
+          <h3 className="text-base font-bold text-white">No Automations Created Yet</h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            Create your first comment-to-DM trigger (e.g., when someone comments "PRICE" or "COURSE", send them a DM automatically).
+          </p>
+          <button
+            onClick={() => setIsWizardOpen(true)}
+            className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white transition-all"
+          >
+            Create Your First Auto-DM Flow
+          </button>
+        </div>
+      )}
 
       {/* Side Drawer Editor */}
       {editingAutomation && (
