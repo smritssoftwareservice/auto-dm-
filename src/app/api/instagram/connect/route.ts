@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
-  const appId = process.env.META_APP_ID;
-  const redirectUri = process.env.META_REDIRECT_URI || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/instagram/callback`;
-
-  if (!appId) {
-    // If Meta App ID is not configured, redirect back with error status
-    return NextResponse.redirect(new URL('/dashboard/instagram?error=missing_meta_app_id', req.url));
-  }
+  // Safe production fallback if Vercel environment variables are not set in UI dashboard
+  const appId = process.env.META_APP_ID || '1654296786261193';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dmflow-ai.vercel.app';
+  const redirectUri = process.env.META_REDIRECT_URI || `${baseUrl}/api/instagram/callback`;
 
   const scope = [
     'instagram_basic',

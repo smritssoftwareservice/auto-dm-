@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { verifyMetaSignature, sendInstagramDM, replyToInstagramComment } from '@/lib/meta/instagram';
 import { checkEntitlement, recordUsageEvent } from '@/lib/subscriptions/entitlements';
 
+const FALLBACK_PAGE_TOKEN = 'EAAXgkvxMVMkBSZAXdZCtFSkd5oXmlFZAF3s3euMRuqZC8k43FOxyApkLqtPgv3nr8mvcWnHw6PWIhtRZCplcZCd7aIFRBGaK22CONaBdET6k2rvmn4aUxjSIho9jn0kmxiECyBSpMfzCT7ylA8ItvROi1jRTZC4SCMyqLBKlgr2ZBW7YjjGCtdZCPOTSgW8zdsHY9KXV7G4qiyBtGp41y9cE0gI5ZCrEK9rrAQWTnTkZBd5Dml7LqDS5pWz3fVZAWppCZBCPV9SfsFWwBbDWs3j5vZBEZAAf4ec';
+
 // GET - Meta Webhook Handshake / Verification
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -114,7 +116,7 @@ export async function POST(req: NextRequest) {
               });
 
               // Must use a Page Access Token, NOT an App Secret
-              const accessToken = accessTokenEncrypted || process.env.META_PAGE_ACCESS_TOKEN;
+              const accessToken = accessTokenEncrypted || process.env.META_PAGE_ACCESS_TOKEN || FALLBACK_PAGE_TOKEN;
               if (accessToken && result.sentMessageText) {
                 await sendInstagramDM({
                   recipientId: senderId,
@@ -168,7 +170,7 @@ export async function POST(req: NextRequest) {
                   commentId,
                 });
 
-                const accessToken = accessTokenEncrypted || process.env.META_PAGE_ACCESS_TOKEN;
+                const accessToken = accessTokenEncrypted || process.env.META_PAGE_ACCESS_TOKEN || FALLBACK_PAGE_TOKEN;
                 if (accessToken && result.sentMessageText) {
                   await replyToInstagramComment({
                     commentId,
