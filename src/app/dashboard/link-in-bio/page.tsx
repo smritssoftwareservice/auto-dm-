@@ -16,6 +16,13 @@ export default function LinkInBioEditorPage() {
   const [newUrl, setNewUrl] = useState('');
   const [newType, setNewType] = useState<BlockType>('LINK');
 
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const handleSavePage = () => {
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
+
   const addBlock = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle) return;
@@ -64,13 +71,19 @@ export default function LinkInBioEditorPage() {
             <Eye className="w-4 h-4 text-purple-400" /> Preview Live Page <ExternalLink className="w-3 h-3" />
           </Link>
           <button
-            onClick={() => alert('Link-in-Bio updated successfully!')}
+            onClick={handleSavePage}
             className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg shadow-purple-600/30 hover:opacity-95 transition-all flex items-center gap-2"
           >
             <Save className="w-4 h-4" /> Save & Publish
           </button>
         </div>
       </div>
+
+      {saveSuccess && (
+        <div className="p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Link-in-Bio Page Updated & Published Successfully!
+        </div>
+      )}
 
       {/* Builder Layout: Left Controls, Right Phone Mockup */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
