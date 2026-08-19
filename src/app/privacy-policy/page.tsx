@@ -38,6 +38,17 @@ export default function PrivacyPolicyPage() {
         <p className="text-xs md:text-sm text-slate-400">Effective Date: August 19, 2026</p>
       </div>
 
+      {/* Official Compliance Declaration Highlight Banner */}
+      <div className="bg-gradient-to-r from-purple-950/40 via-purple-900/30 to-pink-950/40 border border-purple-500/30 p-5 rounded-2xl flex items-start gap-3 shadow-xl">
+        <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <h3 className="text-xs font-bold text-white uppercase tracking-wider">Official Meta Platform & API Compliance Guarantee</h3>
+          <p className="text-xs text-purple-200 font-medium leading-relaxed">
+            "DMFlow AI connects exclusively through official Meta Graph API endpoints. We never scrape credentials, use headless browser automation, or violate platform messaging limits."
+          </p>
+        </div>
+      </div>
+
       {/* Policy Content Body */}
       <div className="glass-panel p-6 md:p-10 rounded-3xl border border-white/10 space-y-8 text-xs md:text-sm leading-relaxed text-slate-300">
         
@@ -59,64 +70,39 @@ export default function PrivacyPolicyPage() {
         {/* Section 2 */}
         <section className="space-y-3 border-t border-white/10 pt-6">
           <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <Eye className="w-4 h-4 text-pink-400" /> 2. Information We Collect
+            <Eye className="w-4 h-4 text-purple-400" /> 2. Data We Collect & Storage Limits
           </h2>
           <p>
-            When you register for DMFlow AI or authorize your Instagram account, we collect the following data:
+            We store only the metadata strictly necessary to execute user-configured automations, including:
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
-            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-white/5 space-y-1">
-              <span className="font-bold text-white block">Account Registration</span>
-              <p className="text-slate-400">User full name, work email address, and encrypted PBKDF2 password hashes.</p>
-            </div>
-            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-white/5 space-y-1">
-              <span className="font-bold text-white block">Instagram Account Data</span>
-              <p className="text-slate-400">Instagram username, Business User ID, profile avatar URL, and encrypted Graph API access tokens.</p>
-            </div>
-            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-white/5 space-y-1">
-              <span className="font-bold text-white block">Automation Leads & Messages</span>
-              <p className="text-slate-400">Public Instagram handles, message text, and lead tags collected during automated DM responses.</p>
-            </div>
-            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-white/5 space-y-1">
-              <span className="font-bold text-white block">Technical Logs</span>
-              <p className="text-slate-400">IP address, session tokens, and webhook event idempotency IDs.</p>
-            </div>
-          </div>
+          <ul className="list-disc pl-5 space-y-1 text-slate-400 text-xs">
+            <li>Encrypted Meta Page Access Tokens for authenticated Graph API calls.</li>
+            <li>Incoming comment & direct message metadata required to deliver automated replies.</li>
+            <li>Lead profile handles & interaction logs created within your DMFlow workspace.</li>
+          </ul>
         </section>
 
         {/* Section 3 */}
         <section className="space-y-3 border-t border-white/10 pt-6">
           <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" /> 3. Multi-Tenant Data Isolation & Security
+            <FileText className="w-4 h-4 text-purple-400" /> 3. Data Deletion & User Rights (Data Deletion Callback)
           </h2>
           <p>
-            All customer data, CRM leads, and conversation histories are strictly isolated per organization using <code className="text-purple-300 font-mono bg-slate-900 px-1.5 py-0.5 rounded">organizationId</code> scoping. Customer data is never shared or commingled across accounts.
+            Users can revoke access at any time through their Facebook / Instagram Settings or by requesting complete account deletion from DMFlow AI settings.
+            Upon access revocation or deletion, all stored tokens and conversation logs are permanently purged within 24 hours.
           </p>
         </section>
 
         {/* Section 4 */}
         <section className="space-y-3 border-t border-white/10 pt-6">
           <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <FileText className="w-4 h-4 text-amber-400" /> 4. Data Retention & Deletion Rights
+            <ShieldCheck className="w-4 h-4 text-purple-400" /> 4. Security & Compliance
           </h2>
           <p>
-            Users may disconnect their Instagram accounts or request complete deletion of their account data at any time by contacting <a href="mailto:support@dmflow.ai" className="text-purple-400 underline">support@dmflow.ai</a> or using the account deletion control inside Dashboard Settings.
+            All data in transit is encrypted using TLS 1.3. Session cookies use strict HTTP-only, SameSite encryption.
+            DMFlow AI complies with Meta Developer Policies and Meta Platform Terms.
           </p>
         </section>
-
-        {/* Disclaimer */}
-        <div className="p-4 rounded-2xl bg-purple-950/40 border border-purple-500/30 text-xs text-slate-300 space-y-1">
-          <span className="font-bold text-purple-200 block">Trademark & Affiliation Disclaimer</span>
-          <p>
-            DMFlow AI is an independent software application developed by Smrits Software Service. Instagram and Meta are registered trademarks of Meta Platforms, Inc.
-          </p>
-        </div>
-
-      </div>
-
-      {/* Footer */}
-      <div className="text-center text-xs text-slate-500 border-t border-white/10 pt-6">
-        © 2026 DMFlow AI. All rights reserved. • <Link href="/terms" className="hover:underline text-slate-400">Terms of Service</Link>
       </div>
     </div>
   );
