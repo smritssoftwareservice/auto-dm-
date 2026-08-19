@@ -11,11 +11,17 @@ export async function GET(req: NextRequest) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
-  const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN || 'dmflow_webhook_verify_token_123';
+  const verifyToken = 
+    process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN || 
+    process.env.META_WEBHOOK_VERIFY_TOKEN || 
+    'dmflow_webhook_verify_token_123';
 
   if (mode === 'subscribe' && token === verifyToken) {
-    console.log('[Meta Webhook Verification Success]');
-    return new NextResponse(challenge, { status: 200 });
+    console.log('[Meta Instagram Webhook Verification Success]');
+    return new NextResponse(challenge || '', { 
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' },
+    });
   }
 
   return NextResponse.json({ error: 'Verification token mismatch' }, { status: 403 });
@@ -34,7 +40,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
-    const body = JSON.parse(rawBody);
+    const body = JSON.parse(rawBody || '{}');
 
     // 2. Process Meta Instagram Messenger & Comments
     if (body.object === 'instagram' || body.object === 'page') {
@@ -55,7 +61,6 @@ export async function POST(req: NextRequest) {
             targetOrgId = igAccount.organizationId;
             accessTokenEncrypted = igAccount.accessTokenEncrypted;
           } else {
-            // Fallback to first active organization in DB
             const firstOrg = await prisma.organization.findFirst();
             if (firstOrg) targetOrgId = firstOrg.id;
           }
@@ -94,7 +99,6 @@ export async function POST(req: NextRequest) {
             const messageText = msgEvent.message?.text || '';
 
             if (senderId && messageText) {
-              // Check Entitlements
               const entitlement = await checkEntitlement(targetOrgId, 'MESSAGES');
               if (!entitlement.allowed) {
                 console.warn(`[Meta Webhook] Entitlement check failed for org ${targetOrgId}: ${entitlement.error}`);
@@ -109,7 +113,6 @@ export async function POST(req: NextRequest) {
                 userText: messageText,
               });
 
-              // Dispatch real Instagram Graph API DM
               const accessToken = accessTokenEncrypted || process.env.META_PAGE_ACCESS_TOKEN || process.env.META_APP_SECRET;
               if (accessToken && result.sentMessageText) {
                 await sendInstagramDM({
@@ -118,7 +121,6 @@ export async function POST(req: NextRequest) {
                   accessToken,
                 });
 
-                // Increment Usage
                 await recordUsageEvent(targetOrgId, 'INSTAGRAM_DM_SENT', 1);
               }
             }
@@ -153,7 +155,6 @@ export async function POST(req: NextRequest) {
                   // Ignore race
                 }
 
-                // Check Entitlements
                 const entitlement = await checkEntitlement(targetOrgId, 'MESSAGES');
                 if (!entitlement.allowed) continue;
 
@@ -166,7 +167,6 @@ export async function POST(req: NextRequest) {
                   commentId,
                 });
 
-                // Reply publicly to Instagram Comment if configured
                 const accessToken = accessTokenEncrypted || process.env.META_PAGE_ACCESS_TOKEN;
                 if (accessToken && result.sentMessageText) {
                   await replyToInstagramComment({
@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ status: 'EVENT_PROCESSED' }, { status: 200 });
+    return new NextResponse('EVENT_RECEIVED', { status: 200 });
   } catch (error: any) {
     console.error('[Meta Production Webhook Error]:', error);
     try {
@@ -196,9 +196,9 @@ export async function POST(req: NextRequest) {
         },
       });
     } catch {
-      // Ignore DB write error
+      // Ignore DB error
     }
 
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
+    return new NextResponse('EVENT_RECEIVED', { status: 200 });
   }
 }
