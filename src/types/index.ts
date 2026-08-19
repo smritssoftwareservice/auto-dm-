@@ -184,6 +184,8 @@ export interface Conversation {
   messages: Message[];
 }
 
+export type AIProviderType = 'mock' | 'gemini' | 'groq' | 'openrouter' | 'openai';
+
 export interface AIConfiguration {
   id: string;
   organizationId: string;
@@ -195,6 +197,9 @@ export interface AIConfiguration {
   fallbackMessage: string;
   handoffMessage: string;
   status: 'ACTIVE' | 'PAUSED';
+  provider?: AIProviderType;
+  apiKey?: string;
+  modelName?: string;
 }
 
 export interface KnowledgeDocument {

@@ -10,6 +10,9 @@ export const APP_CONFIG = {
   // AI Settings
   aiProvider: process.env.AI_PROVIDER || 'mock',
   aiApiKey: process.env.AI_API_KEY || '',
+  geminiApiKey: process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '',
+  groqApiKey: process.env.GROQ_API_KEY || '',
+  openrouterApiKey: process.env.OPENROUTER_API_KEY || '',
   
   // Stripe Test Settings
   stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
