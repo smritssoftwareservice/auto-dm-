@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { comparePassword, setSessionCookie } from '@/lib/auth/session';
+import { comparePassword, hashPassword, setSessionCookie } from '@/lib/auth/session';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
 
     const cleanEmail = email.toLowerCase().trim();
 
-    // Find User
-    const user = await prisma.user.findUnique({
+    // 1. Find User in Database
+    let user = await prisma.user.findUnique({
       where: { email: cleanEmail },
       include: {
         memberships: {
@@ -28,27 +28,67 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (!user || !user.passwordHash) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
-    }
+    // 2. If user exists, verify password
+    if (user && user.passwordHash) {
+      const isValid = comparePassword(password, user.passwordHash);
+      if (!isValid) {
+        return NextResponse.json(
+          { error: 'Invalid email or password' },
+          { status: 401 }
+        );
+      }
+    } else {
+      // 3. If user does not exist (or database was reset), auto-provision user on the fly
+      const name = cleanEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ') || 'Creator User';
+      const passwordHash = hashPassword(password);
+      const orgName = `${name}'s Workspace`;
+      const orgSlug = `${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now()}`;
 
-    // Verify Password
-    const isValid = comparePassword(password, user.passwordHash);
-    if (!isValid) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
+      try {
+        user = await prisma.user.create({
+          data: {
+            email: cleanEmail,
+            name,
+            passwordHash,
+            role: 'USER',
+            memberships: {
+              create: {
+                organization: {
+                  create: {
+                    name: orgName,
+                    slug: orgSlug,
+                    businessCategory: 'Creator',
+                    plan: 'FREE',
+                    subscriptions: {
+                      create: {
+                        plan: 'FREE',
+                        status: 'active',
+                      },
+                    },
+                  },
+                },
+                role: 'OWNER',
+              },
+            },
+          },
+          include: {
+            memberships: {
+              include: {
+                organization: true,
+              },
+            },
+          },
+        });
+      } catch (createErr) {
+        console.error('[Auto-provision User Error]:', createErr);
+        return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+      }
     }
 
     const membership = user.memberships[0];
-    const org = membership?.organization || { id: 'default', slug: 'default', plan: 'FREE' };
+    const org = membership?.organization || { id: 'default', slug: 'default', plan: 'FREE', name: 'Default Workspace' };
 
-    // Set HTTP-only session cookie
-    await setSessionCookie({
+    const payload = {
       userId: user.id,
       email: user.email,
       name: user.name,
@@ -57,9 +97,9 @@ export async function POST(req: NextRequest) {
       plan: org.plan,
       role: membership?.role || 'MEMBER',
       userRole: user.role,
-    });
+    };
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: {
         id: user.id,
@@ -74,6 +114,11 @@ export async function POST(req: NextRequest) {
         plan: org.plan,
       },
     });
+
+    // Set HTTP-only session cookie directly on response object for 100% reliability
+    await setSessionCookie(payload, response);
+
+    return response;
   } catch (err: any) {
     console.error('[Auth Login Error]:', err);
     return NextResponse.json(

@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'An account with this email address already exists.' },
+        { error: 'An account with this email address already exists. Please sign in instead.' },
         { status: 400 }
       );
     }
@@ -94,8 +94,7 @@ export async function POST(req: NextRequest) {
     const membership = newUser.memberships[0];
     const org = membership.organization;
 
-    // Set HTTP-only session cookie
-    await setSessionCookie({
+    const payload = {
       userId: newUser.id,
       email: newUser.email,
       name: newUser.name,
@@ -104,9 +103,9 @@ export async function POST(req: NextRequest) {
       plan: org.plan,
       role: membership.role,
       userRole: newUser.role,
-    });
+    };
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: {
         id: newUser.id,
@@ -121,6 +120,11 @@ export async function POST(req: NextRequest) {
         plan: org.plan,
       },
     });
+
+    // Set HTTP-only session cookie directly on response object
+    await setSessionCookie(payload, response);
+
+    return response;
   } catch (err: any) {
     console.error('[Auth Signup Error]:', err);
     return NextResponse.json(

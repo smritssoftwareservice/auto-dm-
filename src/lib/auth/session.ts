@@ -77,22 +77,45 @@ export function createSessionToken(payload: Omit<AuthSessionPayload, 'exp'>): st
   return signToken({ ...payload, exp });
 }
 
-export async function setSessionCookie(payload: Omit<AuthSessionPayload, 'exp'>) {
+export async function setSessionCookie(payload: Omit<AuthSessionPayload, 'exp'>, res?: NextResponse) {
   const token = createSessionToken(payload);
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 7 * 24 * 60 * 60,
-  });
+  try {
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
+    });
+  } catch {
+    // Ignore if headers already sent
+  }
+
+  if (res) {
+    res.cookies.set(SESSION_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
+    });
+  }
+
   return token;
 }
 
-export async function clearSessionCookie() {
-  const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE_NAME);
+export async function clearSessionCookie(res?: NextResponse) {
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete(SESSION_COOKIE_NAME);
+  } catch {
+    // Ignore
+  }
+
+  if (res) {
+    res.cookies.delete(SESSION_COOKIE_NAME);
+  }
 }
 
 // 4. Retrieve Authenticated User & Scoped Organization Context
