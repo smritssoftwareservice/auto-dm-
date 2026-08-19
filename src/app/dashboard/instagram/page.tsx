@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { 
@@ -10,7 +10,7 @@ import {
 import { InstagramIcon } from '@/components/common/InstagramIcon';
 import { DEMO_INSTAGRAM_ACCOUNT } from '@/lib/mock-data';
 
-export default function InstagramPage() {
+function InstagramContent() {
   const searchParams = useSearchParams();
   const [account, setAccount] = useState(DEMO_INSTAGRAM_ACCOUNT);
   const [connecting, setConnecting] = useState(false);
@@ -33,7 +33,6 @@ export default function InstagramPage() {
 
   const handleConnectLiveMeta = () => {
     setConnecting(true);
-    // Redirect directly to the server route /api/instagram/connect
     window.location.href = '/api/instagram/connect';
   };
 
@@ -213,5 +212,13 @@ export default function InstagramPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function InstagramPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400 text-xs">Loading Instagram Settings...</div>}>
+      <InstagramContent />
+    </Suspense>
   );
 }
